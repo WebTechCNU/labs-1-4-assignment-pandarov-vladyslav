@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Items App</title>
+</head>
+<body>
+  <h1>Items</h1>
+
+  <button onclick="loadItems()">Load items</button>
+
+  <h2>Add item</h2>
+  <input id="name" placeholder="Name" />
+  <input id="description" placeholder="Description" />
+  <button onclick="addItem()">Add</button>
+
+  <ul id="list"></ul>
+
+  <script>
+    async function loadItems() {
+      const res = await fetch("/.netlify/functions/items");
+      const data = await res.json();
+
+      const list = document.getElementById("list");
+      list.innerHTML = "";
+
+      data.forEach(item => {
+        const li = document.createElement("li");
+        li.innerHTML = `
+          ${item.name} - ${item.description}
+          <button onclick="editItem('${item._id}')">Edit</button>
+          <button onclick="deleteItem('${item._id}')">Delete</button>
+        `;
+        list.appendChild(li);
+      });
+    }
+
+    async function addItem() {
+      const name = document.getElementById("name").value;
+      const description = document.getElementById("description").value;
+
+      await fetch("/.netlify/functions/items", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ name, description })
+      });
+
+      document.getElementById("name").value = "";
+      document.getElementById("description").value = "";
+
+      loadItems();
+    }
+
+    async function editItem(id) {
+    const newName = prompt("Enter new name:");
+    const newDescription = prompt("Enter new description:");
+
+    await fetch(`/.netlify/functions/itemById?id=${id}`, {
+        method: "PUT",
+        headers: {
+        "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+        name: newName,
+        description: newDescription
+        })
+    });
+
+    loadItems();
+    }
+
+    async function deleteItem(id) {
+      await fetch(`/.netlify/functions/itemById?id=${id}`, {
+        method: "DELETE"
+      });
+
+      loadItems();
+    }
+  </script>
+</body>
+</html>
