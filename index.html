@@ -3,27 +3,160 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Items App - GraphQL</title>
+  <link rel="stylesheet" href="styles.css">
+  <title>Items App - GraphQL + JWT</title>
 </head>
 <body>
-  <h1>Items (GraphQL)</h1>
+  <div class="bg-bubble bubble1"></div>
+  <div class="bg-bubble bubble2"></div>
+  <div class="bg-bubble bubble3"></div>
 
-  <button onclick="loadItems()">Load items</button>
+  <div class="container">
+    <h1 class="title">Items App</h1>
+    <p class="subtitle">GraphQL + JWT Authentication + MongoDB</p>
 
-  <h2>Add item</h2>
-  <input id="name" placeholder="Name" />
-  <input id="description" placeholder="Description" />
-  <button onclick="addItem()">Add</button>
+    <div class="grid">
+      <div class="card">
+        <h2>Register</h2>
+        <div class="form-group">
+          <input id="registerUsername" placeholder="New username" />
+          <input id="registerPassword" type="password" placeholder="New password" />
+        </div>
+        <div class="button-row">
+          <button class="btn-success" onclick="register()">Register</button>
+        </div>
+      </div>
 
-  <ul id="list"></ul>
+      <div class="card">
+        <h2>Login</h2>
+        <div class="form-group">
+          <input id="loginUsername" placeholder="Username" />
+          <input id="loginPassword" type="password" placeholder="Password" />
+        </div>
+        <div class="button-row">
+          <button class="btn-primary" onclick="login()">Login</button>
+          <button class="btn-secondary" onclick="logout()">Logout</button>
+        </div>
+        <p class="status" id="authStatus">Not logged in</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h2>Add item</h2>
+        <div class="form-group">
+          <input id="name" placeholder="Name" />
+          <input id="description" placeholder="Description" />
+        </div>
+        <div class="button-row">
+          <button class="btn-success" onclick="addItem()">Add item</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="items-card">
+      <div class="items-header">
+        <h2>Items List</h2>
+        <button class="btn-primary" onclick="loadItems()">Load items</button>
+      </div>
+      <ul id="list"></ul>
+    </div>
+  </div>
 
   <script>
-    async function graphqlRequest(query, variables = {}) {
-      const response = await fetch("/.netlify/functions/graphql", {
+    let token = localStorage.getItem("token") || "";
+
+    updateAuthStatus();
+    loadItems();
+
+    function updateAuthStatus() {
+      const authStatus = document.getElementById("authStatus");
+      authStatus.textContent = token ? "Logged in" : "Not logged in";
+    }
+
+    async function register() {
+      const username = document.getElementById("registerUsername").value.trim();
+      const password = document.getElementById("registerPassword").value.trim();
+
+      if (!username || !password) {
+        alert("Enter username and password for registration.");
+        return;
+      }
+
+      const response = await fetch("/.netlify/functions/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
+        body: JSON.stringify({ username, password })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        alert(data.error || "Registration failed");
+        return;
+      }
+
+      token = data.token;
+      localStorage.setItem("token", token);
+      updateAuthStatus();
+
+      document.getElementById("registerUsername").value = "";
+      document.getElementById("registerPassword").value = "";
+
+      alert("Registration successful");
+    }
+
+    async function login() {
+      const username = document.getElementById("loginUsername").value.trim();
+      const password = document.getElementById("loginPassword").value.trim();
+
+      if (!username || !password) {
+        alert("Enter username and password.");
+        return;
+      }
+
+      const response = await fetch("/.netlify/functions/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ username, password })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        alert(data.error || "Login failed");
+        return;
+      }
+
+      token = data.token;
+      localStorage.setItem("token", token);
+      updateAuthStatus();
+      alert("Login successful");
+    }
+
+    function logout() {
+      token = "";
+      localStorage.removeItem("token");
+      updateAuthStatus();
+      alert("Logged out");
+    }
+
+    async function graphqlRequest(query, variables = {}, useAuth = false) {
+      const headers = {
+        "Content-Type": "application/json"
+      };
+
+      if (useAuth && token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      const response = await fetch("/.netlify/functions/graphql", {
+        method: "POST",
+        headers,
         body: JSON.stringify({ query, variables })
       });
 
@@ -55,12 +188,22 @@
       const list = document.getElementById("list");
       list.innerHTML = "";
 
+      if (!data.items.length) {
+        list.innerHTML = `<li class="empty">No items yet</li>`;
+        return;
+      }
+
       data.items.forEach(item => {
         const li = document.createElement("li");
         li.innerHTML = `
-          ${item.name} - ${item.description}
-          <button onclick="editItem('${item._id}')">Edit</button>
-          <button onclick="deleteItem('${item._id}')">Delete</button>
+          <div class="item-text">
+            <div class="item-name">${item.name}</div>
+            <div class="item-description">${item.description}</div>
+          </div>
+          <div class="item-actions">
+            <button class="btn-warning" onclick="editItem('${item._id}')">Edit</button>
+            <button class="btn-danger" onclick="deleteItem('${item._id}')">Delete</button>
+          </div>
         `;
         list.appendChild(li);
       });
@@ -72,6 +215,11 @@
 
       if (!name || !description) {
         alert("Please fill in both fields.");
+        return;
+      }
+
+      if (!token) {
+        alert("Login first");
         return;
       }
 
@@ -87,7 +235,7 @@
 
       const variables = { name, description };
 
-      const data = await graphqlRequest(mutation, variables);
+      const data = await graphqlRequest(mutation, variables, true);
       if (!data) return;
 
       document.getElementById("name").value = "";
@@ -97,6 +245,11 @@
     }
 
     async function deleteItem(id) {
+      if (!token) {
+        alert("Login first");
+        return;
+      }
+
       const mutation = `
         mutation DeleteItem($id: ID!) {
           deleteItem(id: $id)
@@ -105,13 +258,18 @@
 
       const variables = { id };
 
-      const data = await graphqlRequest(mutation, variables);
+      const data = await graphqlRequest(mutation, variables, true);
       if (!data) return;
 
       loadItems();
     }
 
     async function editItem(id) {
+      if (!token) {
+        alert("Login first");
+        return;
+      }
+
       const newName = prompt("Enter new name:");
       if (newName === null) return;
 
@@ -134,7 +292,7 @@
         description: newDescription
       };
 
-      const data = await graphqlRequest(mutation, variables);
+      const data = await graphqlRequest(mutation, variables, true);
       if (!data) return;
 
       loadItems();

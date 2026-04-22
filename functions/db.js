@@ -3,12 +3,13 @@ const { MongoClient } = require("mongodb");
 const client = new MongoClient(process.env.MONGO_URI);
 let db;
 
-async function connectDB() {
+async function connectDB(collectionName = "items") {
   if (!db) {
     await client.connect();
     db = client.db(process.env.DB_NAME);
   }
-  return db.collection("items");
+
+  return db.collection(collectionName);
 }
 
 module.exports = connectDB;

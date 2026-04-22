@@ -1,166 +1,170 @@
-# Laboratory Assignment 1: REST API
+# Web Technologies Labs 1–3
 
 ## Author
-
 Vladyslav Pandarov
 
 ---
 
-## Project Description
+## Project Overview
+This project was developed as a sequence of laboratory assignments for modern client-side web technologies.
 
-This project is a simple REST API application built using Netlify Functions and MongoDB.
-It allows users to create, read, update, and delete items through API endpoints and a basic web interface.
+The application started as a REST API, was extended with GraphQL, and finally enhanced with JWT-based authentication and user registration.
+
+It allows users to:
+- view items
+- create, update, delete items
+- register a new account
+- log in and receive a JWT token
 
 ---
 
 ## Technologies Used
-
-* Node.js
-* Netlify Functions
-* MongoDB Atlas
-* HTML, CSS, JavaScript (frontend)
-* Fetch API
+- Node.js
+- Netlify Functions
+- MongoDB Atlas
+- GraphQL (Apollo Server)
+- JWT (jsonwebtoken)
+- bcryptjs
+- HTML, CSS, JavaScript
+- Fetch API
 
 ---
 
 ## How to Run Locally
 
-1. Clone the repository:
-
 ```bash
 git clone https://github.com/WebTechCNU/labs-1-4-assignment-pandarov-vladyslav.git
 cd labs-1-4-assignment-pandarov-vladyslav
-```
-
-2. Install dependencies:
-
-```bash
 npm install
-```
-
-3. Create `.env` file in the root directory:
-
-```env
+==================================================================================
+Create .env file:
 MONGO_URI=your_mongodb_connection_string
 DB_NAME=lab1
-```
-
-4. Run the project:
-
-```bash
+JWT_SECRET=your_secret_key
+==================================================================================
+Run project:
 npx netlify dev
-```
-
-5. Open in browser:
-
-```text
+==================================================================================
+Open in browser:
 http://localhost:8888
-```
+==================================================================================
+Laboratory Assignment 1: REST API
 
----
+Implemented REST API with full CRUD operations.
 
-## API Endpoints
-
-### GET all items
-
-```text
+Endpoints
 GET /.netlify/functions/items
-```
-
-### Create item
-
-```text
 POST /.netlify/functions/items
-```
-
-Body:
-
-```json
-{
-  "name": "Item name",
-  "description": "Item description"
-}
-```
-
----
-
-### GET item by ID
-
-```text
 GET /.netlify/functions/itemById?id=<id>
-```
-
----
-
-### Update item
-
-```text
 PUT /.netlify/functions/itemById?id=<id>
-```
-
-Body:
-
-```json
-{
-  "name": "New name",
-  "description": "New description"
-}
-```
-
----
-
-### Delete item
-
-```text
 DELETE /.netlify/functions/itemById?id=<id>
-```
+Features
+CRUD operations
+MongoDB storage
+Data persistence
+Frontend integration
+==================================================================================
+Laboratory Assignment 2: GraphQL
 
----
+Added GraphQL API with queries and mutations.
 
-## Frontend
+Endpoint
+POST /.netlify/functions/graphql
+Example Query
+query {
+  items {
+    _id
+    name
+    description
+  }
+}
 
-The project includes a simple frontend interface that:
+Example Mutation
+mutation {
+  createItem(name: "Test", description: "Test item") {
+    _id
+    name
+  }
+}
+Features
+GraphQL schema and resolvers
+Queries (read data)
+Mutations (modify data)
+MongoDB integration
+==================================================================================
+Laboratory Assignment 3: JWT Authentication
 
-* displays all items
-* allows adding new items
-* supports editing and deleting items
+Implemented authentication and authorization.
 
-The frontend communicates with the backend using the Fetch API.
+Endpoints
+Register
+POST /.netlify/functions/register
+Login
+POST /.netlify/functions/login
 
----
+Response:
 
-## Database
+{
+  "token": "JWT_TOKEN"
+}
 
-MongoDB Atlas is used as a database to store items.
-Data persists after server restart.
+Features
+User registration
+Password hashing (bcryptjs)
+JWT token generation
+Token-based authentication
+Protected GraphQL mutations
+Token stored in localStorage
 
----
+Protected operations
+Require JWT:
+createItem
+updateItem
+deleteItem
+Public:
+items
+item
+==================================================================================
+Frontend
+The frontend provides:
+registration and login forms
+item list display
+add/edit/delete functionality
+animated UI with separate CSS
+GraphQL requests via Fetch API
 
-## Notes
+Database
+MongoDB Atlas is used.
+Collections:
+items
+users (with hashed passwords)
 
-* Environment variables are stored in `.env` and are not included in the repository.
-* CORS is enabled for development purposes.
+Security
+JWT authentication
+bcrypt password hashing
+protected endpoints
+environment variables in .env
 
----
+Deployment
+Designed for Netlify:
+Netlify Functions for backend
+Static frontend
+GraphQL redirect:
+[[redirects]]from = "/graphql"to = "/.netlify/functions/graphql"status = 200
 
-## Features
+Features Summary
+REST API
+GraphQL API
+MongoDB integration
+JWT authentication
+User registration
+Password hashing
+Protected mutations
+Responsive UI with animations
 
-* Full CRUD functionality
-* REST API implementation
-* MongoDB integration
-* Simple frontend interface
-
----
-
-## Deployment
-
-The backend can be deployed on Netlify.
-Frontend can be hosted via Netlify or GitHub Pages.
-
----
-
-## Conclusion
-
-This project demonstrates the implementation of a REST API using serverless functions and integration with a cloud database.
-
----
+Conclusion
+The project demonstrates building a full-stack application step by step:
+Lab 1 — REST API
+Lab 2 — GraphQL
+Lab 3 — Authentication (JWT)
+The final result is a functional mini full-stack application with a serverless backend and modern frontend.

@@ -1,8 +1,22 @@
+const jwt = require("jsonwebtoken");
 const connectDB = require("./db");
 const { ObjectId } = require("mongodb");
 
 exports.handler = async (event) => {
   try {
+    if (event.httpMethod === "OPTIONS") {
+      return {
+        statusCode: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, PUT, DELETE, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization"
+        },
+        body: ""
+      };
+    }
+
     const method = event.httpMethod;
     const id = event.queryStringParameters?.id;
 
@@ -11,7 +25,8 @@ exports.handler = async (event) => {
         statusCode: 400,
         headers: {
           "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*"
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization"
         },
         body: JSON.stringify({ error: "ID is required" })
       };
@@ -28,7 +43,8 @@ exports.handler = async (event) => {
           statusCode: 404,
           headers: {
             "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "*"
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization"
           },
           body: JSON.stringify({ error: "Item not found" })
         };
@@ -38,10 +54,41 @@ exports.handler = async (event) => {
         statusCode: 200,
         headers: {
           "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*"
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization"
         },
         body: JSON.stringify(item)
       };
+    }
+
+    if (method === "PUT" || method === "DELETE") {
+      const token = event.headers.authorization?.split(" ")[1];
+
+      if (!token) {
+        return {
+          statusCode: 401,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization"
+          },
+          body: JSON.stringify({ error: "No token" })
+        };
+      }
+
+      try {
+        jwt.verify(token, process.env.JWT_SECRET);
+      } catch (e) {
+        return {
+          statusCode: 403,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization"
+          },
+          body: JSON.stringify({ error: "Invalid token" })
+        };
+      }
     }
 
     if (method === "PUT") {
@@ -63,7 +110,8 @@ exports.handler = async (event) => {
         statusCode: 200,
         headers: {
           "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*"
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization"
         },
         body: JSON.stringify(updatedItem)
       };
@@ -77,7 +125,8 @@ exports.handler = async (event) => {
           statusCode: 404,
           headers: {
             "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "*"
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization"
           },
           body: JSON.stringify({ error: "Item not found" })
         };
@@ -89,7 +138,8 @@ exports.handler = async (event) => {
         statusCode: 200,
         headers: {
           "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*"
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization"
         },
         body: JSON.stringify(deletedItem)
       };
@@ -99,7 +149,8 @@ exports.handler = async (event) => {
       statusCode: 405,
       headers: {
         "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*"
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization"
       },
       body: JSON.stringify({ error: "Method Not Allowed" })
     };
@@ -108,7 +159,8 @@ exports.handler = async (event) => {
       statusCode: 500,
       headers: {
         "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*"
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization"
       },
       body: JSON.stringify({ error: error.message })
     };

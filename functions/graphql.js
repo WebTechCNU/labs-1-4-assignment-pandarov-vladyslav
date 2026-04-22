@@ -3,6 +3,7 @@ const express = require("express");
 const serverless = require("serverless-http");
 const connectDB = require("./db");
 const { ObjectId } = require("mongodb");
+const jwt = require("jsonwebtoken");
 
 const typeDefs = gql`
   type Item {
@@ -22,6 +23,12 @@ const typeDefs = gql`
     deleteItem(id: ID!): Boolean
   }
 `;
+
+function requireAuth(user) {
+  if (!user) {
+    throw new Error("Unauthorized: login required");
+  }
+}
 
 const resolvers = {
   Query: {
@@ -47,7 +54,9 @@ const resolvers = {
   },
 
   Mutation: {
-    createItem: async (_, { name, description }) => {
+    createItem: async (_, { name, description }, { user }) => {
+      requireAuth(user);
+
       const collection = await connectDB();
       const newItem = { name, description };
       const result = await collection.insertOne(newItem);
@@ -59,7 +68,9 @@ const resolvers = {
       };
     },
 
-    updateItem: async (_, { id, name, description }) => {
+    updateItem: async (_, { id, name, description }, { user }) => {
+      requireAuth(user);
+
       const collection = await connectDB();
 
       const updateFields = {};
@@ -74,7 +85,9 @@ const resolvers = {
       return await collection.findOne({ _id: new ObjectId(id) });
     },
 
-    deleteItem: async (_, { id }) => {
+    deleteItem: async (_, { id }, { user }) => {
+      requireAuth(user);
+
       const collection = await connectDB();
       const result = await collection.deleteOne({ _id: new ObjectId(id) });
       return result.deletedCount > 0;
@@ -87,7 +100,24 @@ const app = express();
 const server = new ApolloServer({
   typeDefs,
   resolvers,
-  context: ({ event }) => ({ event }),
+  context: ({ req }) => {
+    const headers = req?.headers || {};
+    const authHeader = headers.authorization || headers.Authorization;
+
+    let user = null;
+
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      const token = authHeader.split(" ")[1];
+
+      try {
+        user = jwt.verify(token, process.env.JWT_SECRET);
+      } catch (error) {
+        throw new Error("Forbidden: invalid token");
+      }
+    }
+
+    return { req, user };
+  },
 });
 
 let serverHandler;
@@ -102,6 +132,18 @@ async function startServer() {
 }
 
 exports.handler = async (event, context) => {
+  if (event.httpMethod === "OPTIONS") {
+    return {
+      statusCode: 200,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization"
+      },
+      body: ""
+    };
+  }
+
   const handler = await startServer();
   return handler(event, context);
 };
